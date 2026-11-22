@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Recall</title>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css">
+<style>
+  :root { color-scheme: light; }
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; min-height: 100vh; color: #000;
+    font: 15px/1.4 Tahoma, Verdana, "Lucida Grande", Geneva, sans-serif;
+    display: flex; justify-content: center; align-items: center; align-items: safe center;
+    padding: 32px 24px;
+    background:
+      radial-gradient(ellipse at 16% 18%, rgba(120, 70, 210, .42), transparent 46%),
+      radial-gradient(ellipse at 84% 8%, rgba(30, 90, 210, .48), transparent 44%),
+      radial-gradient(ellipse at 68% 86%, rgba(190, 70, 50, .22), transparent 42%),
+      linear-gradient(115deg, transparent 38%, rgba(190, 200, 255, .07) 50%, transparent 62%),
+      linear-gradient(#02030a, #0b1230 52%, #05060f);
+  }
+  body::before, body::after {
+    content: ""; position: fixed; inset: 0; z-index: 0; pointer-events: none;
+  }
+  body::before {
+    background-image:
+      radial-gradient(1px 1px at 8px 14px, #fff, transparent),
+      radial-gradient(1px 1px at 42px 68px, rgba(255,255,255,.7), transparent),
+      radial-gradient(1.4px 1.4px at 92px 22px, #fff, transparent),
+      radial-gradient(1px 1px at 128px 96px, rgba(210,225,255,.85), transparent),
+      radial-gradient(1px 1px at 18px 132px, rgba(255,255,255,.5), transparent),
+      radial-gradient(1.2px 1.2px at 164px 54px, #fff, transparent),
+      radial-gradient(1px 1px at 70px 156px, rgba(255,255,255,.75), transparent),
+      radial-gradient(1px 1px at 150px 148px, rgba(255,255,255,.45), transparent);
+    background-size: 190px 176px;
+  }
+  body::after {
+    background-image:
+      radial-gradient(2px 2px at 28px 36px, #fff, transparent),
+      radial-gradient(1.6px 1.6px at 108px 18px, #d7e7ff, transparent),
+      radial-gradient(1px 1px at 76px 112px, rgba(255,255,255,.7), transparent),
+      radial-gradient(1.5px 1.5px at 156px 92px, #fff, transparent),
+      radial-gradient(1px 1px at 14px 84px, rgba(255,255,255,.55), transparent),
+      radial-gradient(1px 1px at 132px 150px, rgba(255,255,255,.4), transparent);
+    background-size: 210px 168px; opacity: .9;
+  }
+  button, select { font: inherit; }
+  button { color: #000; }
+  #screen { position: relative; z-index: 1; width: min(800px, 100%); }
+  .window {
+    display: flex; flex-direction: column; min-height: 560px;
+    background: #c0c0c0; border: 2px solid; border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf, 0 22px 60px rgba(0, 0, 0, .55);
+  }
+  .title { display: flex; align-items: center; justify-content: space-between;
+    background: #000080; color: #fff; font-weight: 700; padding: 3px 3px 3px 6px; }
+  .mark { display: inline-block; width: 16px; height: 14px; margin-right: 6px;
+    background: #fc0; color: #000; text-align: center; line-height: 14px; font-size: 11px;
+    vertical-align: -1px; }
+  .title button { min-height: 18px; min-width: 18px; padding: 0 5px; line-height: 14px; font-weight: 700; }
+  .pad { display: flex; flex-direction: column; gap: 14px; padding: 18px 20px; flex: 1; }
+  .pad > * { margin: 0; }
+  button {
+    background: #c0c0c0; min-height: 36px; padding: 6px 14px; cursor: pointer;
+    border: 2px solid; border-color: #fff #000 #000 #fff;
+    box-shadow: inset -1px -1px 0 #808080, inset 1px 1px 0 #dfdfdf;
+  }
+  button:active, button.down {
+    background: #bdbdbd;
+    border-color: #000 #fff #fff #000;
+    box-shadow: inset -1px -1px 0 #dfdfdf, inset 1px 1px 0 #404040;
+  }
+  button:focus { outline: 1px dotted #000; outline-offset: -4px; }
+  button:disabled { color: #808080; text-shadow: 1px 1px 0 #fff; cursor: default; }
+  button.good { color: #006400; font-weight: 700; }
+  button.bad { color: #800000; }
+  select, .sheet, .status, fieldset {
+    border: 2px solid; border-color: #808080 #fff #fff #808080;
+    box-shadow: inset -1px -1px 0 #dfdfdf, inset 1px 1px 0 #000;
+  }
+  select { width: 100%; background: #fff; padding: 3px 4px; }
+  fieldset { min-width: 0; padding: 8px 10px 10px; background: #c0c0c0; flex: 1; }
+  legend { padding: 0 4px; font-weight: 700; background: #c0c0c0; }
+  .sheet {
+    display: flex; flex-direction: column; justify-content: center;
+    background: #fff; min-height: 280px; padding: 22px 24px; flex: 1; overflow: auto;
+  }
+  .status { display: flex; justify-content: space-between; gap: 8px; margin: 0 2px 2px;
+    padding: 3px 6px; background: #c0c0c0; font-size: 12px; }
+  .lengths, .actions { display: flex; gap: 8px; }
+  .lengths button, .actions button { flex: 1; }
+  .check { display: flex; align-items: center; gap: 6px; }
+  .banner { background: #ffffc8; border: 1px solid #808000; padding: 4px 8px; }
+  .kicker { color: #000080; font-size: 12px; margin-bottom: 6px; text-align: center; }
+  .hud { display: flex; align-items: center; justify-content: center; gap: 16px; margin-bottom: 8px; }
+  .meter { display: flex; gap: 3px; }
+  .meter span { width: 16px; height: 12px; background: #c0c0c0; border: 1px solid;
+    border-color: #808080 #fff #fff #808080; }
+  .meter span.on { background: #008000; }
+  .meter span.off { background: #c00000; }
+  .hint { text-align: center; color: #000080; margin-bottom: 8px; }
+  .tag { margin-top: 4px; color: #000080; font-size: 11px; font-weight: 700; letter-spacing: .06em; }
+  hr { border: 0; border-top: 1px solid #808080; margin: 12px 0 8px; }
+  .pic { display: block; max-width: 100%; max-height: 380px; margin: 12px auto; }
+  #prompt, #answer, #hint { overflow-x: auto; text-align: center; font-size: 26px; }
+  #prompt.prose { font-size: 20px; text-align: left; line-height: 1.4; }
+  #answer.prose { font-size: 16px; text-align: left; line-height: 1.45; }
+  .sheet .katex-display { margin: 0.3em 0; }
+  ul { list-style: none; padding: 0; }
+  li { display: flex; gap: 8px; padding: 3px 0; border-bottom: 1px dotted #808080; }
+  li b { width: 42px; color: #000080; flex: none; }
+  table { width: 100%; border-collapse: collapse; }
+  td { padding: 4px 0; }
+  td:last-child { text-align: right; font-weight: 700; }
+  .keys { color: #404040; font-size: 11px; text-align: center; }
+  .field { font-weight: 700; display: flex; flex-direction: column; gap: 4px; }
+</style>
+</head>
+<body>
+<main id="screen">Loading…</main>
+<script src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js"></script>
+<script>
+const WINDOW = 5, GOAL = 0.8;
+const MACROS = {
+  "\\ket": "\\lvert #1\\rangle",
+  "\\bra": "\\langle #1\\rvert",
+  "\\braket": "\\langle #1\\vert #2\\rangle",
+  "\\mel": "\\langle #1\\vert #2\\vert #3\\rangle",
+  "\\expval": "\\langle #1\\rangle",
+  "\\comm": "[#1,#2]",
+  "\\acomm": "\\{#1,#2\\}",
+  "\\ah": "\\hat{a}", "\\ad": "\\hat{a}^\\dagger",
+  "\\ch": "\\hat{c}", "\\cd": "\\hat{c}^\\dagger",
+  "\\Hh": "\\hat{H}", "\\Nh": "\\hat{N}", "\\Ph": "\\hat{P}",
+  "\\xh": "\\hat{x}", "\\ph": "\\hat{p}",
+  "\\Tr": "\\operatorname{Tr}", "\\dd": "\\mathrm{d}", "\\lbl": "#1"
+};
+
+let deck = [], progress = null, session = null, view = "home";
+const root = document.getElementById("screen");
+
+function blank() {
+  return {points: 0, bestStreak: 0, section: "All", length: 15, weak: false, cards: {}};
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, ch => ({
+    "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
+  }[ch]));
+}
+function recent(id) {
+  const st = progress.cards[id];
+  return st && st.recent ? st.recent : [];
+}
+// Clear once 4 of the last 5 are right and the latest answer is right.
+function solid(rec) {
+  const w = rec.slice(-WINDOW);
+  if (w.length < 4) return false;
+  const hits = w.reduce((a, b) => a + b, 0);
+  return hits / w.length >= GOAL && w[w.length - 1] === 1;
+}
+function accuracy(rec) {
+  const w = rec.slice(-WINDOW);
+  if (!w.length) return null;
+  return w.reduce((a, b) => a + b, 0) / w.length;
+}
+function struggling(rec) {
+  return rec.some(x => x === 0) && !solid(rec);
+}
+function weight(rec) {
+  if (solid(rec)) return 0.25;
+  if (!rec.some(x => x === 0)) return 1;
+  return 1 + 8 * (1 - accuracy(rec));
+}
+function inSection() {
+  if (!progress.section || progress.section === "All") return deck;
+  return deck.filter(c => c.section === progress.section);
+}
+function pool() {
+  const cards = inSection();
+  return progress.weak ? cards.filter(c => struggling(recent(c.id))) : cards;
+}
+function sections() {
+  const order = [];
+  for (const c of deck) if (!order.includes(c.section)) order.push(c.section);
+  return order;
+}
+function snippet(s) {
+  return s.replace(/\\[a-zA-Z]+/g, " ").replace(/[{}$\\_^]/g, "").replace(/\s+/g, " ").trim().slice(0, 72);
+}
+function cardLabel(c) {
+  const name = (c.name || "").replace(/\$/g, "").trim();
+  if (name && !name.includes("\\")) return name.slice(0, 72);
+  return snippet(c.prompt) || name.slice(0, 72) || "(picture)";
+}
+function weakList() {
+  return inSection().filter(c => struggling(recent(c.id))).sort((a, b) =>
+    accuracy(recent(a.id)) - accuracy(recent(b.id))).slice(0, 6);
+}
+
+function paint(el, tex, display) {
+  el.replaceChildren();
+  if (!tex) { el.textContent = "(blank)"; return; }
+  if (!window.katex) { el.textContent = tex; return; }
+  try {
+    katex.render(tex, el, {displayMode: display, throwOnError: true, macros: MACROS, strict: "ignore"});
+  } catch (err) {
+    el.textContent = tex;
+  }
+}
+function paintMixed(el, text) {
+  el.replaceChildren();
+  for (const part of String(text).split(/(\$[^$]+\$)/g)) {
+    if (part.startsWith("$") && part.endsWith("$") && part.length > 2) {
+      const span = document.createElement("span");
+      el.appendChild(span);
+      paint(span, part.slice(1, -1), false);
+    } else if (part) {
+      el.appendChild(document.createTextNode(part));
+    }
+  }
+}
+function paintPrompt(el, card) {
+  if (card.text) paintMixed(el, card.prompt);
+  else paint(el, card.prompt, true);
+}
+function addPic(el, url) {
+  if (!url) return;
+  const img = document.createElement("img");
+  img.className = "pic";
+  img.alt = "";
+  img.src = url;
+  el.appendChild(img);
+}
+
+function frame(body, status, close) {
+  root.innerHTML =
+    '<div class="window"><div class="title"><span><span class="mark">R</span>Recall</span>' +
+    (close ? '<button type="button" data-act="' + close + '" aria-label="Close">×</button>' : "<span></span>") +
+    '</div><div class="pad">' + body + '</div><div class="status">' + status + "</div></div>";
+}
+function tally(cards) {
+  let clear = 0, weak = 0;
+  for (const c of cards) {
+    const rec = recent(c.id);
+    if (solid(rec)) clear++;
+    else if (struggling(rec)) weak++;
+  }
+  return {n: cards.length, clear, weak};
+}
+function drawHome() {
+  const names = sections();
+  if (progress.section !== "All" && !names.includes(progress.section)) progress.section = "All";
+  const here = inSection();
+  const stats = tally(here);
+  const cards = pool();
+  const options = ['<option value="All"' + (progress.section === "All" ? " selected" : "") + ">All (" + deck.length + ")</option>"]
+    .concat(names.map(name => {
+      const n = deck.filter(c => c.section === name).length;
+      return '<option value="' + esc(name) + '"' + (name === progress.section ? " selected" : "") + ">" + esc(name) + " (" + n + ")</option>";
+    })).join("");
+  const lengths = [10, 15, 25].map(n =>
+    '<button type="button" data-act="length" data-val="' + n + '"' + (progress.length === n ? ' class="down"' : "") + ">" + n + "</button>"
+  ).join("");
+  const weak = weakList();
+  const rows = weak.length ? weak.map(c => {
+    const rec = recent(c.id);
+    const pct = Math.round(accuracy(rec) * 100);
+    return "<li><b>" + pct + "%</b><span>" + esc(cardLabel(c)) + "</span></li>";
+  }).join("") : "<li>None yet. A miss lands here, and that card keeps coming back.</li>";
+  const reset = progress.points || Object.keys(progress.cards).length
+    ? '<button type="button" data-act="reset">Reset scores</button>' : "";
+  frame(
+    '<label class="field">Section<select id="section">' + options + "</select></label>" +
+    '<div class="field">Cards in a round<div class="lengths">' + lengths + "</div></div>" +
+    '<label class="check"><input id="weak" type="checkbox"' + (progress.weak ? " checked" : "") + "> Weak cards only</label>" +
+    "<p>Knew it is 10 points, more on a streak or a weak card. Misses return until 4 of the last 5 are right.</p>" +
+    "<fieldset><legend>Weak spots</legend><ul>" + rows + "</ul></fieldset>" +
+    '<button type="button" data-act="start"' + (cards.length ? "" : " disabled") + ">Start</button>" + reset,
+    stats.n + " cards · " + stats.clear + " clear · " + stats.weak + " weak · " + progress.points + " pts",
+    ""
+  );
+}
+function pips(rec) {
+  const w = rec.slice(-WINDOW);
+  const cells = Array(WINDOW - w.length).fill(-1).concat(w);
+  return cells.map(v => '<span class="' + (v === 1 ? "on" : v === 0 ? "off" : "") + '"></span>').join("");
+}
+function accText(rec) {
+  if (!rec.length) return "New";
+  if (solid(rec)) return "Clear";
+  const w = rec.slice(-WINDOW);
+  const hits = w.reduce((a, b) => a + b, 0);
+  return hits + "/" + w.length + " · " + Math.round(100 * hits / w.length) + "% · goal 80%";
+}
+function drawPlay() {
+  const c = session.card;
+  const rec = recent(c.id);
+  const hint = c.name && c.name !== c.prompt;
+  const buttons = session.revealed
+    ? '<div class="actions"><button type="button" class="bad" data-act="miss">1 Missed</button><button type="button" class="good" data-act="knew">2 Knew it</button></div>'
+    : '<button type="button" data-act="reveal">Show answer</button>';
+  frame(
+    (session.note ? '<div class="banner">' + esc(session.note) + "</div>" : "") +
+    '<div class="sheet" data-id="' + esc(c.id) + '">' +
+      '<div class="kicker">' + esc([c.section, c.subsection].filter(Boolean).join(" · ")) + "</div>" +
+      '<div class="hud"><div class="meter">' + pips(rec) + "</div><span>" + esc(accText(rec)) + "</span>" +
+      (hint && !session.showHint ? '<button type="button" data-act="hint">Hint</button>' : "") + "</div>" +
+      (session.showHint ? '<div id="hint" class="hint"></div>' : "") +
+      '<div id="pics"></div><div id="prompt"></div>' +
+      (session.revealed ? '<hr><div class="tag">ANSWER</div><div id="apics"></div><div id="answer"' + (c.answer_is_text ? ' class="prose"' : "") + "></div>" : "") +
+    "</div>" + buttons + '<p class="keys">space shows the answer · 1 missed · 2 knew it · esc ends</p>',
+    (session.n + 1) + "/" + session.total + " · streak " + session.streak + " · round +" + session.points + " · " + progress.points + " pts",
+    "end"
+  );
+  if (session.showHint) paintMixed(document.getElementById("hint"), c.name);
+  addPic(document.getElementById("pics"), c.image);
+  paintPrompt(document.getElementById("prompt"), c);
+  if (c.text) document.getElementById("prompt").classList.add("prose");
+  if (session.revealed) {
+    addPic(document.getElementById("apics"), c.answer_image);
+    const ans = document.getElementById("answer");
+    if (c.answer_is_text) paintMixed(ans, c.answer);
+    else paint(ans, c.answer, true);
+  }
+}
+function drawDone() {
+  frame(
+    '<div class="sheet"><table>' +
+      "<tr><td>This round</td><td>+" + session.points + "</td></tr>" +
+      "<tr><td>Correct</td><td>" + session.correct + "/" + session.n + "</td></tr>" +
+      "<tr><td>Cleared</td><td>" + session.cleared + "</td></tr>" +
+      "<tr><td>Lifetime</td><td>" + progress.points + " pts</td></tr>" +
+      "<tr><td>Best streak</td><td>" + progress.bestStreak + "</td></tr>" +
+    "</table></div>" +
+    '<div class="actions"><button type="button" data-act="start">Again</button><button type="button" data-act="home">Menu</button></div>',
+    session.n ? "Round complete" : "Round ended",
+    "home"
+  );
+}
+function draw() {
+  if (view === "play") drawPlay();
+  else if (view === "done") drawDone();
+  else drawHome();
+}
+
+// Misses are due again after two other cards. Weak cards are also drawn more often.
+function pick() {
+  const last = session.lastId;
+  const due = session.pool.filter(c => session.schedule[c.id] <= session.n && c.id !== last);
+  if (due.length) {
+    due.sort((a, b) => (accuracy(recent(a.id)) ?? 0) - (accuracy(recent(b.id)) ?? 0));
+    return due[0];
+  }
+  const weak = session.pool.filter(c => struggling(recent(c.id)) && c.id !== last);
+  const source = weak.length && Math.random() < 0.75 ? weak : session.pool;
+  let bag = source.filter(c => c.id !== last);
+  if (!bag.length) bag = source.length ? source : session.pool;
+  const weights = bag.map(c => weight(recent(c.id)));
+  let roll = Math.random() * weights.reduce((a, b) => a + b, 0);
+  for (let i = 0; i < bag.length; i++) {
+    roll -= weights[i];
+    if (roll <= 0) return bag[i];
+  }
+  return bag[bag.length - 1];
+}
+function start() {
+  const cards = pool();
+  if (!cards.length) { home(); return; }
+  session = {
+    pool: cards, total: progress.length || 15, n: 0, lastId: null, schedule: {},
+    points: 0, correct: 0, cleared: 0, streak: 0, note: "", card: null,
+    revealed: false, showHint: false, busy: false
+  };
+  nextCard();
+}
+function nextCard() {
+  if (session.n >= session.total) { view = "done"; draw(); return; }
+  session.card = pick();
+  session.revealed = false;
+  session.showHint = false;
+  session.busy = false;
+  view = "play";
+  draw();
+}
+function reveal() {
+  if (view !== "play" || session.revealed) return;
+  session.revealed = true;
+  draw();
+}
+function grade(ok) {
+  if (view !== "play" || !session.revealed || session.busy) return;
+  session.busy = true;
+  const id = session.card.id;
+  const st = progress.cards[id] || {recent: [], correct: 0, wrong: 0};
+  const before = st.recent.slice();
+  const wasSolid = solid(before);
+  st.recent = before.concat(ok ? 1 : 0).slice(-12);
+  if (ok) st.correct++; else st.wrong++;
+  progress.cards[id] = st;
+
+  let pts = 0;
+  if (ok) {
+    session.streak++;
+    const streakBonus = Math.min(10, Math.max(0, (session.streak - 2) * 2));
+    const weakBonus = struggling(before) ? 5 : 0;
+    pts = 10 + weakBonus + streakBonus;
+    session.correct++;
+    progress.bestStreak = Math.max(progress.bestStreak || 0, session.streak);
+    const bits = ["+" + pts];
+    if (weakBonus) bits.push("weak card");
+    if (streakBonus) bits.push("streak");
+    session.note = !wasSolid && solid(st.recent) ? "Cleared  +" + pts : bits.join("  ·  ");
+  } else {
+    session.streak = 0;
+    session.note = "Miss — back soon";
+  }
+  progress.points += pts;
+  session.points += pts;
+  if (!ok) session.schedule[id] = session.n + 3;
+  else if (struggling(st.recent)) session.schedule[id] = session.n + 4;
+  else delete session.schedule[id];
+  if (ok && !wasSolid && solid(st.recent)) session.cleared++;
+  session.n++;
+  session.lastId = id;
+  save();
+  nextCard();
+}
+function save() {
+  fetch("/api/progress", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify(progress)
+  });
+}
+function resetScores() {
+  if (!confirm("Erase points and which cards you miss?")) return;
+  progress = Object.assign(blank(), {
+    section: progress.section, length: progress.length, weak: progress.weak
+  });
+  save();
+  draw();
+}
+function home() { view = "home"; draw(); }
+
+document.addEventListener("click", e => {
+  const b = e.target.closest("button");
+  if (!b || !root.contains(b)) return;
+  const act = b.dataset.act;
+  if (act === "start") start();
+  else if (act === "home") home();
+  else if (act === "reveal") reveal();
+  else if (act === "miss") grade(false);
+  else if (act === "knew") grade(true);
+  else if (act === "end") { view = "done"; draw(); }
+  else if (act === "hint") { session.showHint = true; draw(); }
+  else if (act === "reset") resetScores();
+  else if (act === "length") { progress.length = Number(b.dataset.val); save(); draw(); }
+});
+document.addEventListener("change", e => {
+  if (e.target.id === "section") progress.section = e.target.value;
+  else if (e.target.id === "weak") progress.weak = e.target.checked;
+  else return;
+  save();
+  draw();
+});
+document.addEventListener("keydown", e => {
+  if (view !== "play" || e.repeat) return;
+  if (e.key === "Escape") { view = "done"; draw(); return; }
+  if (e.key === " ") e.preventDefault();
+  if ((e.key === " " || e.key === "Enter") && !session.revealed) reveal();
+  else if (e.key === "1") grade(false);
+  else if (e.key === "2") grade(true);
+  else if (e.key === "h" || e.key === "H") { session.showHint = true; draw(); }
+});
+
+fetch("/api/deck").then(r => r.json()).then(deckData => {
+  deck = deckData.cards || [];
+  return fetch("/api/progress").then(r => r.json());
+}).then(saved => {
+  progress = Object.assign(blank(), saved);
+  progress.weak = !!progress.weak;
+  if (![10, 15, 25].includes(Number(progress.length))) progress.length = 15;
+  else progress.length = Number(progress.length);
+  home();
+}).catch(() => { root.textContent = "Could not load the deck."; });
+</script>
+</body>
+</html>
