@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """Question bank: a small local flashcard game.
 
-Reads the deck in ~/Downloads/physics_flashcards and stores scores in
-progress.json next to this file. A card may set "image" or "answer_image"
-to a picture inside that folder (png, jpg, gif, webp, svg).
+Reads cards.json, custom_cards.json, and images/ from this folder, and
+stores scores in progress.json. A card may set "image" or "answer_image"
+to a picture in this folder (png, jpg, gif, webp, svg).
 
     python3 server.py
 """
@@ -14,7 +14,7 @@ from pathlib import Path
 from urllib.parse import quote, unquote, urlparse
 
 ROOT = Path(__file__).resolve().parent
-FLASH = Path.home() / "Downloads" / "physics_flashcards"
+FLASH = ROOT
 DECK = FLASH / "cards.json"
 CUSTOM = FLASH / "custom_cards.json"
 PROGRESS = ROOT / "progress.json"
