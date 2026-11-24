@@ -1,6 +1,6 @@
 # Physics flashcards
 
-An Anki-style recall game built from your LaTeX handbook. It shows a prompt (the left-hand side of an equation, or the name of a result). You type the answer against a clock, reveal it, then grade yourself. Spaced repetition decides when each card comes back.
+An Anki-style recall game. It shows a prompt (the left-hand side of an equation, or the name of a result). You type the answer against a clock, reveal it, then grade yourself. Spaced repetition decides when each card comes back.
 
 ## Setup (once)
 
